@@ -50,7 +50,7 @@ public class MoveToTargetAgent : Agent
 
         Random.Range(-4f, 4f), 0.5f, Random.Range(1f, 4f));
 
-        if (floor != null) floor.material.color = idleColour;
+        //if (floor != null) floor.material.color = idleColour;
 
     }
 
