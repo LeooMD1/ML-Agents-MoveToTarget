@@ -26,6 +26,7 @@ public class MoveToTargetAgent : Agent
     
     [SerializeField] private GameObject[] Checkpoints;
     private int nextCheckpoint;
+    
 
     // 1. RESET: called at the start of every episode.
     // Randomising positions stops the agent memorising one route.
@@ -44,8 +45,22 @@ public class MoveToTargetAgent : Agent
 
     public override void CollectObservations(VectorSensor sensor)
     {
-        sensor.AddObservation(transform.localPosition);
-        sensor.AddObservation(target.localPosition);
+        Vector3 toNext = PointAt(nextCheckpoint) - transform.position;
+        toNext.y = 0f;
+        Vector3 toAhead = PointAt(nextCheckpoint + 4) - transform.position;
+        toAhead.y = 0f;
+
+        sensor.AddObservation(toNext.normalized.x);
+        sensor.AddObservation(toNext.normalized.z);
+        sensor.AddObservation(Mathf.Clamp01(toNext.magnitude / 5f));
+        sensor.AddObservation(toAhead.normalized.x);
+        sensor.AddObservation(toAhead.normalized.z);
+    }
+
+    private Vector3 PointAt(int index)
+    {
+        if (index < Checkpoints.Length) return Checkpoints[index].transform.position;
+        return target.position;
     }
 
     // 3. ACT: the neural network's output arrives here.
@@ -85,14 +100,14 @@ public class MoveToTargetAgent : Agent
     {
         if (other.CompareTag("Target"))
         {
-            SetReward(1000f);
+            AddReward(1000f);
             if (floor != null) floor.material.color = winColour;
             EndEpisode();
         }
         
         else if (other.CompareTag("Wall"))
         {
-            SetReward(-1f);
+            AddReward(-1f);
             if (floor != null) floor.material.color = loseColour;
             EndEpisode();
         }
@@ -100,10 +115,12 @@ public class MoveToTargetAgent : Agent
         else if (other.CompareTag("goodCheckpoint"))
         {
             //StartCoroutine(CheckpointTouched());
-            if (nextCheckpoint < Checkpoints.Length && other.transform == Checkpoints[nextCheckpoint])
+            if (nextCheckpoint < Checkpoints.Length && other.gameObject == Checkpoints[nextCheckpoint])
             {
                 AddReward(0.1f * (nextCheckpoint + 1));
                 nextCheckpoint++;
+                print("checkpoint touched");
+                //if (floor != null) floor.material.color = pointColour;
             }
         }
     }
@@ -112,6 +129,7 @@ public class MoveToTargetAgent : Agent
     {
         for (int i = 0; i < Checkpoints.Length; i++)
         {
+            print("checkpoint touched");
             SetReward(i);
         }
 
